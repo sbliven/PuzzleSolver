@@ -1,0 +1,56 @@
+#:kivy 1.0.9
+
+<CameraWindow>:
+    orientation: 'vertical'
+    camera: cam
+
+    AnchorLayout:
+        anchor_x: 'center'
+        anchor_y: 'center'
+        RelativeLayout:
+            size: cam.size
+            size_hint: None,None
+            Camera:
+                id: cam
+                resolution: 640,480
+                size: self.resolution
+                #size_hint: None,None
+                #allow_stretch: True
+                on_texture: print "camera.on_texture"
+                canvas.after:
+                    Color:
+                        rgb: 0,1,0
+                    Line:
+                        points: self.x,self.y,self.width,self.height
+                    #Color:
+                    #    rgba: 0,0,1,.5
+                    #Rectangle:
+                    #    pos: self.pos
+                    #    size: self.size
+            Overlay:
+                pos: cam.pos
+                size: cam.size
+                canvas:
+                    Color:
+                        rgba: 0,0,1,.5
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+
+    Button:
+        text: 'Capture'
+        size_hint_y: None
+        height: '48dp'
+        width: 200
+        on_press: root.capture()
+
+
+<Overlay>:
+    canvas:
+        Color:
+            rgba: 0,0,1,.5
+        Rectangle:
+            pos:self.pos
+            size: self.size
+<Handle>:
+    size: '2mm'
