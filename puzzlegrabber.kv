@@ -3,6 +3,52 @@
 <CameraWindow>:
     orientation: 'vertical'
     camera: cam
+    grid: overlay
+    __safe_id: [gridsizedrop.__self__] #prevent collection of dropdown
+
+    BoxLayout:
+        height: '48dp'
+        size_hint_x: 1
+        size_hint_y: None
+        orientation: 'horizontal'
+
+        Label:
+            text: 'Grid Size:'
+            size_hint: None,1
+            width:200
+
+        Button:
+            id: gridsizebtn
+            text: "{}x{}".format(overlay.cols,overlay.rows)
+            on_release: gridsizedrop.open(self)
+            on_press: gridsizedrop.open(self)
+            size_hint: None,1
+            width:200
+        DropDown:
+            id: gridsizedrop
+            size_hint: None,1
+            width:200
+            on_parent: self.dismiss()
+            on_select: overlay.squares = args[1]
+
+            Button:
+                text: '5x5'
+                height: '48dp'
+                size_hint_y: None
+                on_release: gridsizedrop.select((5,5))
+                #on_release: overlay.squares = 5,5
+            Button:
+                text: '7x7'
+                height: '48dp'
+                size_hint_y: None
+                on_release: gridsizedrop.select((7,7))
+                #on_release: overlay.squares = 7,7
+            Button:
+                text: '9x9'
+                height: '48dp'
+                size_hint_y: None
+                on_release: gridsizedrop.select((9,9))
+                #on_release: overlay.squares = 9,9
 
     AnchorLayout:
         anchor_x: 'center'
@@ -17,40 +63,58 @@
                 #size_hint: None,None
                 #allow_stretch: True
                 on_texture: print "camera.on_texture"
-                canvas.after:
-                    Color:
-                        rgb: 0,1,0
-                    Line:
-                        points: self.x,self.y,self.width,self.height
-                    #Color:
-                    #    rgba: 0,0,1,.5
-                    #Rectangle:
-                    #    pos: self.pos
-                    #    size: self.size
             Overlay:
+                id: overlay
                 pos: cam.pos
                 size: cam.size
-                canvas:
-                    Color:
-                        rgba: 0,0,1,.5
-                    Rectangle:
-                        pos: self.pos
-                        size: self.size
+                rows: 9
+                cols: 9
+                topleft: tl
+                topright: tr
+                bottomleft: bl
+                bottomright: br
+                on_squares: root.findGrid()
+                Handle:
+                    id: tl
+                    center: 50,400
+                    on_pos: overlay.drawGrid()
+                Handle:
+                    id: tr
+                    center: 500,400
+                    on_pos: overlay.drawGrid()
+                Handle:
+                    id: bl
+                    center:50,50
+                    on_pos: overlay.drawGrid()
+                Handle:
+                    id: br
+                    center: 450,50
+                    on_pos: overlay.drawGrid()
 
     Button:
-        text: 'Capture'
+        id:gridbtn
+        text: 'Pause Video'
         size_hint_y: None
+        size_hint_x: None
         height: '48dp'
         width: 200
         on_press: root.capture()
 
 
 <Overlay>:
+    #on_squares: self.updateCorners()
     canvas:
         Color:
-            rgba: 0,0,1,.5
-        Rectangle:
-            pos:self.pos
-            size: self.size
+            rgba: 0,1,1,1
+        Line:
+            rectangle: self.x, self.y,self.width,self.height
+            close: True
 <Handle>:
-    size: '2mm'
+    size: '4mm','4mm'
+    canvas:
+        Color:
+            rgba: 1,1,1,1
+        Line:
+            circle: self.center_x,self.center_y,self.width/2
+            close: True
+
