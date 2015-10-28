@@ -76,29 +76,34 @@
                 on_squares: root.findGrid()
                 Handle:
                     id: tl
-                    center: 50,400
+                    center_x: overlay.width/2-overlay.height/4
+                    center_y: overlay.height*3/4
                     on_pos: overlay.drawGrid()
                 Handle:
                     id: tr
-                    center: 500,400
+                    center_x: overlay.width/2+overlay.height/4
+                    center_y: overlay.height*3/4
                     on_pos: overlay.drawGrid()
                 Handle:
                     id: bl
-                    center:50,50
+                    center_x: overlay.width/2-overlay.height/4
+                    center_y: overlay.height/4
                     on_pos: overlay.drawGrid()
                 Handle:
                     id: br
-                    center: 450,50
+                    center_x: overlay.width/2+overlay.height/4
+                    center_y: overlay.height/4
                     on_pos: overlay.drawGrid()
 
     Button:
         id:gridbtn
-        text: 'Pause Video'
+        text: ("Pause" if cam.play else "Play") + " Video"
         size_hint_y: None
         size_hint_x: None
         height: '48dp'
         width: 200
-        on_press: root.capture()
+        #on_press: root.capture()
+        on_press: cam.play = not cam.play
 
 
 <Overlay>:

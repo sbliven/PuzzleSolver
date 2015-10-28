@@ -63,10 +63,12 @@ class Handle(Widget):
         if self.collide_point(*touch.pos):
             self.center = touch.pos
             self.moving = True
+            return False
 
     def on_touch_move(self,touch):
         if self.moving:
             self.center = touch.pos
+            return False
 
     def on_touch_up(self,touch):
         self.moving = False
@@ -80,6 +82,11 @@ class Overlay(Widget):
     topright    = ObjectProperty(None)
     bottomright = ObjectProperty(None)
     bottomleft  = ObjectProperty(None)
+
+
+    def __init__(self,**kwargs):
+        super(Overlay,self).__init__(**kwargs)
+        self._required_area = min(self.width,self.height)**2/400
 
     def updateCorners(self,bgraimg):
         """Find the corners of the biggest contour, which should be the grid
@@ -106,8 +113,19 @@ class Overlay(Widget):
                         if area > max_area and len(approx)==4:
                                 biggest = approx
                                 max_area = area
-        tl,_,_,br = zip(*sorted(zip(np.sum(biggest.squeeze(),axis=1),biggest.squeeze())))[1]
-        bl,_,_,tr = zip(*sorted(zip(biggest[:,0,0]-biggest[:,0,1],biggest.squeeze())))[1]
+        if max_area < self._required_area:
+            print "too small: %d < %d" %(max_area,min(img.shape)**2/16)
+            return
+        try:
+            tl,_,_,br = zip(*sorted(
+                zip(np.sum(biggest.squeeze(),axis=1),biggest.squeeze()),
+                key=lambda x:x[0] ))[1]
+            bl,_,_,tr = zip(*sorted(
+                zip(biggest[:,0,0]-biggest[:,0,1],biggest.squeeze()),
+                key=lambda x:x[0]))[1]
+        except Exception as e:
+            print e
+            return
 
         self.topleft.center     = int(tl[0]), int(self.height-tl[1])
         self.topright.center    = int(tr[0]), int(self.height-tr[1])
@@ -161,8 +179,7 @@ class CameraWindow(BoxLayout):
 
         self.camera.bind(texture=self._on_texture)
 
-        #Clock.schedule_once(lambda dt: Clock.schedule_interval(
-        #    lambda dt:self.grid.updateCorners(), 0.1),1.0)
+        self.gridtimer = Clock.schedule_interval( lambda dt:self.findGrid(), 0.1)
 
     def _on_texture(self,camera,texture,*args, **kwargs):
         print(("_on_texture",camera,texture,args, kwargs))
@@ -173,13 +190,15 @@ class CameraWindow(BoxLayout):
         print(("_on_reload", context,args, kwargs))
 
     def findGrid(self):
+        "Update the grid based on the current texture"
         print 'findGrid'
-        self.camera.play = False
+        if self.camera is None: return
         t = self.camera.texture
+        if t is None: return
         img = texture2img(t)
 
-        self._editframe(img)
-        img2texture(img,t)
+        #self._editframe(img)
+        #img2texture(img,t)
 
         self.grid.updateCorners(img)
         #self.grid.drawGrid(img)
@@ -192,18 +211,24 @@ class CameraWindow(BoxLayout):
         return img
 
     def capture(self):
-        print 'Click'
-        self.camera.play = False
-        t = self.camera.texture
-        img = texture2img(t)
+        if self.camera.play:
+            # Capture board
+            print 'Click'
+            self.camera.play = False
+            t = self.camera.texture
+            img = texture2img(t)
 
-        self._editframe(img)
-        img2texture(img,t)
+            self._editframe(img)
+            img2texture(img,t)
 
-        self.grid.updateCorners(img)
-        #self.grid.drawGrid(img)
-
-
+            self.grid.updateCorners(img)
+            #self.grid.drawGrid(img)
+            #self.gridtimer.cancel()
+            Clock.unschedule(self.gridtimer)
+        else:
+            #resume board
+            self.camera.play = True
+            self.gridtimer()
 
 
 
