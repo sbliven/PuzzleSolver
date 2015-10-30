@@ -62,7 +62,7 @@
                 size: self.resolution
                 #size_hint: None,None
                 #allow_stretch: True
-                on_texture: print "camera.on_texture"
+                on_texture: print("camera.on_texture")
             Overlay:
                 id: overlay
                 pos: cam.pos
@@ -79,31 +79,34 @@
                     center_x: overlay.width/2-overlay.height/4
                     center_y: overlay.height*3/4
                     on_pos: overlay.drawGrid()
+                    on_touch_down: if self.collide_point(*args[1].pos): print( "Grabbing tl" )
                 Handle:
                     id: tr
                     center_x: overlay.width/2+overlay.height/4
                     center_y: overlay.height*3/4
                     on_pos: overlay.drawGrid()
+                    on_touch_down: if self.collide_point(*args[1].pos): print("Grabbing tr")
                 Handle:
                     id: bl
                     center_x: overlay.width/2-overlay.height/4
                     center_y: overlay.height/4
                     on_pos: overlay.drawGrid()
+                    on_touch_down: if self.collide_point(*args[1].pos): print("Grabbing bl")
                 Handle:
                     id: br
                     center_x: overlay.width/2+overlay.height/4
                     center_y: overlay.height/4
                     on_pos: overlay.drawGrid()
+                    on_touch_down: if self.collide_point(*args[1].pos): print("Grabbing br")
 
     Button:
         id:gridbtn
-        text: ("Pause" if cam.play else "Play") + " Video"
+        text: ("Freeze Board" if cam.play else "Play Video")
         size_hint_y: None
         size_hint_x: None
         height: '48dp'
         width: 200
-        #on_press: root.capture()
-        on_press: cam.play = not cam.play
+        on_press: root.capture()
 
 
 <Overlay>:

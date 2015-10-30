@@ -2,7 +2,6 @@
 """
 @author Spencer Bliven <sbliven@ucsd.edu>
 """
-
 import sys
 import os
 import optparse
@@ -23,24 +22,30 @@ from kivy.vector import Vector
 from kivy.clock import Clock
 from kivy.graphics import Color,Rectangle,Line
 
+
 def texture2img(texture):
     """Extracts the pixels from a texture and put them into a numpy BGRA image"""
     img = np.fromstring(texture.pixels,np.uint8).reshape([texture.height,texture.width,4])
     return img
 
 def img2texture(img,texture):
-    """Takes the numpy BGRA image and replaces the texture data with it"""
+    """Takes the numpy RGBA image and replaces the texture data with it"""
     if img.shape != (texture.height,texture.width,4):
         raise ValueError("Image sizes don't match. Texture %s but image %s" %( (texture.height,texture.width,4),img.shape) )
 
     #pix = img.tostring()
     #texture.pixels = pix
     buf=img.flatten()
-    texture.blit_buffer(buf,colorfmt='bgra',bufferfmt='ubyte')
+    texture.blit_buffer(buf,colorfmt='rgba',bufferfmt='ubyte')
     return texture
 
 
 class Handle(Widget):
+    min_x = NumericProperty(None)
+    max_x = NumericProperty(None)
+    min_y = NumericProperty(None)
+    max_y = NumericProperty(None)
+
     def __init__(self,**kwargs):
         super(Handle,self).__init__(**kwargs)
         self.moving = False
@@ -61,17 +66,19 @@ class Handle(Widget):
 
     def on_touch_down(self,touch):
         if self.collide_point(*touch.pos):
-            self.center = touch.pos
+            #self.center = touch.pos
             self.moving = True
-            return False
+            return True
 
     def on_touch_move(self,touch):
         if self.moving:
             self.center = touch.pos
-            return False
+            return True
 
     def on_touch_up(self,touch):
         self.moving = False
+        return False
+
 
 class Overlay(Widget):
     rows = NumericProperty(9)
@@ -95,7 +102,7 @@ class Overlay(Widget):
         returns: the corners of the grid as a numpy array with rows topleft,
             topright, bottomright, bottomleft
         """
-        print "Updating corners"
+        print("Updating corners")
         img = cv2.cvtColor(bgraimg, cv2.COLOR_BGRA2GRAY)
         blurred = cv2.GaussianBlur(img,(11,11),0)
         thresholded = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 2)
@@ -114,7 +121,7 @@ class Overlay(Widget):
                                 biggest = approx
                                 max_area = area
         if max_area < self._required_area:
-            print "too small: %d < %d" %(max_area,min(img.shape)**2/16)
+            print("too small: %d < %d" %(max_area,min(img.shape)**2/16))
             return
         try:
             tl,_,_,br = zip(*sorted(
@@ -124,7 +131,7 @@ class Overlay(Widget):
                 zip(biggest[:,0,0]-biggest[:,0,1],biggest.squeeze()),
                 key=lambda x:x[0]))[1]
         except Exception as e:
-            print e
+            print(e)
             return
 
         self.topleft.center     = int(tl[0]), int(self.height-tl[1])
@@ -132,7 +139,6 @@ class Overlay(Widget):
         self.bottomright.center = int(br[0]), int(self.height-bl[1])
         self.bottomleft.center  = int(bl[0]), int(self.height-br[1])
 
-        print "Updating Corners"
         self.drawGrid()
         self.canvas.ask_update()
         #self.corners = np.vstack([tl,tr,br,bl])
@@ -151,7 +157,7 @@ class Overlay(Widget):
                 ly = (1-alpha)*self.topleft.center_y  + alpha*self.bottomleft.center_y
                 ry = (1-alpha)*self.topright.center_y + alpha*self.bottomright.center_y
                 Line(points=[lx,ly,rx,ry])
-            #    print "Line(points=%s)"%([lx,ly,rx,ry])
+            #    print("Line(points=%s)"%([lx,ly,rx,ry]))
             for col in xrange(self.cols+1):
                 alpha = float(col)/(self.cols)
                 # interpolate left to right
@@ -179,7 +185,7 @@ class CameraWindow(BoxLayout):
 
         self.camera.bind(texture=self._on_texture)
 
-        self.gridtimer = Clock.schedule_interval( lambda dt:self.findGrid(), 0.1)
+        self.gridtimer = Clock.schedule_interval( lambda dt:self.findGrid(), 1.0)
 
     def _on_texture(self,camera,texture,*args, **kwargs):
         print(("_on_texture",camera,texture,args, kwargs))
@@ -191,7 +197,7 @@ class CameraWindow(BoxLayout):
 
     def findGrid(self):
         "Update the grid based on the current texture"
-        print 'findGrid'
+        print('findGrid')
         if self.camera is None: return
         t = self.camera.texture
         if t is None: return
@@ -205,7 +211,7 @@ class CameraWindow(BoxLayout):
 
     def _editframe(self,img):
         # Replace part of image with known sudoku board for testing
-        fake = cv2.imread('sudoku-original.jpg',cv2.IMREAD_COLOR)
+        fake = cv2.imread('sudoku-original.png',cv2.IMREAD_COLOR)
         fake = cv2.cvtColor(fake,cv2.COLOR_RGB2BGRA)
         img[:fake.shape[0],:fake.shape[1],:] = fake
         return img
@@ -213,7 +219,7 @@ class CameraWindow(BoxLayout):
     def capture(self):
         if self.camera.play:
             # Capture board
-            print 'Click'
+            print('Click')
             self.camera.play = False
             t = self.camera.texture
             img = texture2img(t)
@@ -224,10 +230,12 @@ class CameraWindow(BoxLayout):
             self.grid.updateCorners(img)
             #self.grid.drawGrid(img)
             #self.gridtimer.cancel()
+            print("UNSCHEDULE")
             Clock.unschedule(self.gridtimer)
         else:
             #resume board
             self.camera.play = True
+            print("SCHEDULE")
             self.gridtimer()
 
 
@@ -243,7 +251,7 @@ def captureFromCamera():
     while True:
         ret, frame = video_capture.read()
         if not ret:
-            print "no frames"
+            print("no frames")
             break
         imshow(frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
